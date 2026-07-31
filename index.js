@@ -1,12 +1,26 @@
 import { extension_settings, loadExtensionSettings } from "../../../extensions.js";
-// Keep track of where your extension is located, name should match repo name
 const extensionName = "ST-auto-reply";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const extensionSettings = extension_settings[extensionName];
-const defaultSettings = {};
+const defaultSettings = {
+    "start-sign": "【回合交接：",
+    "end-sign": "】"
 
+};
 
-function get_text() {
+async function loadSettings() {
+    //Create the settings if they don't exist
+    extension_settings[extensionName] = extension_settings[extensionName] || {};
+    if (Object.keys(extension_settings[extensionName]).length === 0) {
+        Object.assign(extension_settings[extensionName], defaultSettings);
+    }
+
+    // Updating settings in the UI
+    console.log(extension_settings[extensionName]["start-sign"]);
+    $("#ST_extension_start").val(extension_settings[extensionName]["start-sign"]);
+    $("#ST_extension_end").val(extension_settings[extensionName]["end-sign"]);
+}
+
+function save_settings() {
     var start_text, end_text, pattern, target_text;
     const ST_context = SillyTavern.getContext();
     target_text = ST_context.chat[context.chat.length - 1]["mes"];
@@ -21,11 +35,7 @@ function get_text() {
 jQuery(async () => {
     // This is an example of loading HTML from a file
     const settingsHtml = await $.get(`${extensionFolderPath}/index.html`);
-
-    // Append settingsHtml to extensions_settings
-    // extension_settings and extensions_settings2 are the left and right columns of the settings menu
-    // Left should be extensions that deal with system functions and right should be visual/UI related 
     $("#extensions_settings").append(settingsHtml);
-    // Load settings when starting things up (if you have any)
-    //loadSettings();
+    $("#auto-reply-apply-button").on("click", save_settings);
+    loadSettings();
 });
