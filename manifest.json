@@ -1,0 +1,10 @@
+{
+    "display_name": "ST-auto-reply",
+    "loading_order": 9,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "author": "libaitang",
+    "version": "1.0.0",
+    "homePage": "https://github.com/libaitang23/ST-auto-reply"
+}
