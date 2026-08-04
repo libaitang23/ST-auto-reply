@@ -5,12 +5,15 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label>输入开头标志:</label>
-            <input placeholder="开头标志" type="text" class="text_pole" id="ST_extension_start" maxlength="250"
+            <label>输入导演角色卡名字:</label>
+            <input placeholder="导演角色卡名字" type="text" class="text_pole" id="input_director_name" maxlength="250"
                 height="300">
-            <label>输入结束标志:</label>
-            <input placeholder="结束标志" type="text" class="text_pole" id="ST_extension_end" maxlength="250" height="300">
-            <input id="auto-reply-apply-button" class="menu_button" type="submit" value="应用" />
+            <div class="flex-container">
+                <input id="create_append_but" type="checkbox" checked />
+                <label>创建按钮</label>
+            </div>
+            <input id="auto-reply-apply-button" class="menu_button" type="button" value="应用" />
+
         </div>
     </div>
 </div>
