@@ -1,5 +1,8 @@
+import { group_id, group_members, group_members_str } from "./index.js";
+import { get_id, get_chat } from "./getinfo.js"
 const context = SillyTavern.getContext();
 const { eventSource, event_types } = SillyTavern.getContext();
+let end_sign = false;
 // function handle_event() {
 //     //监听事件
 //     console.log("开始监听")
@@ -10,65 +13,100 @@ export async function handle_usermessage() {
     //获取输入框信息
     const director_name = $("#input_director_name").val();
     const director_id = get_id(director_name);
-    let nextch_name, next_chid, generate_options;
-    //判断导演名字
-    if (director_id === null) {
-        console.log("导演名字错误,不发送");
+    let nextch_name, next_chid, generate_options, clean_nextch_name;
+    //判断群组id
+    if (group_id === null) {
+        toastr.error("群组id为空,退出");
         return;
     }
-    //判断输入框是否为空
+    //判断导演名字和输入框是否为空
     if ($("#send_textarea").val() === "") {
-        console.log("输入框为空,不发送");
+        toastr.error("输入框为空,退出");
+    }
+    if (director_id === null) {
+        toastr.error("导演名字错误退出");
         return;
     }
+    //移除事件
+    $("#auto-reply-button").off("click");
+    $("#auto-reply-button").val("停止");
+    $("#auto-reply-button").on("click", () => {
+        end_sign = true;
+        context.stopGeneration();
+    })
     await context.generate("normal");
     //循环调度
-    while (true) {
-        nextch_name = await get_nextch(director_id);
-        if (nextch_name === "user") {
-            break
+    while (!end_sign) {
+        try {
+            nextch_name = await get_nextch(director_id, groupID);
+            if (nextch_name === "user") {
+                toastr.success('角色调度已完成,轮到用户');
+                break;
+            }
+        } catch (error) {
+            console.log("生成中断:", error);
+            break;
         }
-        next_chid = get_id(nextch_name);
-        console.log(next_chid);
+        clean_nextch_name = nextch_name.trim()
+        console.log("下一位说话角色是:", clean_nextch_name)
+        next_chid = get_id(clean_nextch_name);
         if (next_chid === null) {
-            console.log("没有找到id,退出")
-            break
+            toastr.error(`找不到用户ID,退出,id:${next_chid},name:${clean_nextch_name}`,);
+            break;
         }
         generate_options = {
             "force_chid": Number(next_chid)
         }
-        await context.generate("normal", generate_options);
+        try {
+            await context.generate("normal", generate_options);
+        }
+        catch (error) {
+            console.log("生成中断:", error);
+            break;
+        }
+
 
     }
-
+    if (end_sign) {
+        end_sign = false;
+    }
+    //结束后把按钮恢复
+    set_sendButton()
 }
-
-async function get_nextch(director_id) {
+/**
+ * 
+ * @param {number} director_id 导演id
+ * @param {string} groupID 群聊id
+ * @returns {Promise}
+ */
+async function get_nextch(director_id, groupID) {
+    const needMessage = get_chat(5)
     //问导演
     let generate_options = {
-        "force_chid": director_id,
-        "quiet_prompt": "请根据当前群聊的剧情、角色关系和最近对话，判断下一位最适合发言的角色。只能选择当前群聊中存在的一名角色,可以选择导演,只输出该角色的完整名字,如果是用户就只输出user,不要输出解释、台词、标点、引号、空格或任何其他内容。"
+        "prompt": `[提示词]:根据当前聊天上下文，从本次请求提供的候选名单中选择下一位发言者。
+                    只能原样输出一个候选值。
+                    用户需要行动或回应时输出user。
+                    禁止生成剧情、解释或其他文字。
+                    [聊天上下文]:${needMessage}
+                    [聊天角色]:${group_members_str}
+        `,
+        "systemPrompt": "你是一名酒馆群聊调度助手"
     }
-    const director_message = await context.generate("quiet", generate_options);
+    context.generateRaw()
     return director_message.trim();
 }
 
 
 
 
-
-
-
-function get_id(ch_name) {
-    const characters = context.characters;
-    for (const ch of Object.keys(characters)) {
-        if (characters[ch]["name"] === ch_name) {
-            return Number(ch);
-        }
-    }
-    return null;
-
+function set_sendButton() {
+    $("#auto-reply-button").val("发送");
+    $("#auto-reply-button").off("click");
+    $("#auto-reply-button").on("click", handle_usermessage);
 }
+
+
+
 
 
 
